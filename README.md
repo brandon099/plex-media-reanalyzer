@@ -75,7 +75,7 @@ This calls the `analyze_media` function that in turn makes a PUT request to the 
 
 ```bash
 $ python3 plex_media_reanalyzer.py -h
-usage: plex_media_reanalyzer.py [-h] [-c CONFIG] [-t MEDIA_TITLE] (-l | -a | -m)
+usage: plex_media_reanalyzer.py [-h] [-c CONFIG] [-t MEDIA_TITLE] [-d DB_PATH] (-l | -a | -m)
 
 Plex media reanalyzer.
 
@@ -85,6 +85,8 @@ options:
                         Path to the configuration file.
   -t MEDIA_TITLE, --media-title MEDIA_TITLE
                         Title of the media to analyze (required for --analyze-media and --load-ratingkey)
+  -d DB_PATH, --db-path DB_PATH
+                        Path to the database file (JSON TinyDB cache file)
   -l, --listen          Start the web server.
   -a, --load-all-ratingkeys
                         Caches all rating keys to local DB. Useful for first run.
@@ -93,9 +95,9 @@ options:
 
 Some example commands:
 
-Start server mode at the commandline:
+Start server mode at the commandline with custom config and DB paths:
 ```bash
-python plex_media_reanalyzer.py -l
+python plex_media_reanalyzer.py -l -c /config/config.yaml -d /config/plex-media.db.json
 ```
 
 Load all rating keys into local DB:
@@ -120,6 +122,8 @@ The configuration can be done through the `config.yaml` file or through environm
 `webserver_port`: The port for the web server (optional, default is 8080).
 
 `auth_header`: The string to use to do basic HEADER auth for any requests to this tool's API. Optional, unless provided, then all requests must have an auth header that matches.
+
+`db_path`: Path to the TinyDB JSON file to cache media ratingkey and title.
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.

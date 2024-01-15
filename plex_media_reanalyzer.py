@@ -8,7 +8,6 @@ from tinydb import TinyDB, Query
 
 
 webserver = Bottle()
-db = TinyDB("plex-media.db.json")
 Media = Query()
 
 
@@ -32,6 +31,7 @@ def load_config(config_file):
         "LIBRARY_SECTION_NAME",
         "AUTH_HEADER",
         "WEBSERVER_PORT",
+        "DB_PATH",
     ]
     for var in env_vars:
         value = os.environ.get(var)
@@ -44,6 +44,11 @@ def load_config(config_file):
     if missing_keys:
         raise ValueError(f"Missing required configuration values:"
                          f"{', '.join(missing_keys)}")
+
+    # If db_path is not present in the config, default to plex-media.db.json
+    if "db_path" not in config:
+        config["db_path"] = "plex-media.db.json"
+
 
     return config
 
@@ -159,6 +164,11 @@ if __name__ == "__main__":
         help="Title of the media to analyze "
              "(required for --analyze-media and --load-ratingkey)",
     )
+    parser.add_argument(
+        "-d", "--db-path",
+        default="plex-media.db.json",
+        help="Path to the database file.",
+    )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         "-l", "--listen",
@@ -180,6 +190,7 @@ if __name__ == "__main__":
     config = load_config(args.config)
 
     # Access configuration values
+    db = TinyDB(config['db_path'])
     plex_server_url = config["plex_server_url"]
     plex_token = config["plex_token"]
     library_section = config["library_section_name"]
