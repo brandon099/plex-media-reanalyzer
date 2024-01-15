@@ -17,11 +17,21 @@ This allows you to use powerful tools like [Tdarr](https://github.com/HaveAGitGa
    ```bash
    cd plex-media-reanalyzer
    ```
+3. Install the required system dependencies (Required for webserver bjoern):
+   
+   Ubuntu:
+   ```bash
+   sudo apt install python3-dev libev-dev
+   ``` 
+   Alpine Linux:
+   ```bash
+   apk add gcc python3-dev libev-dev musl-dev
+   ```
 
-3. Install the required Python packages:
+4. Install the required Python packages:
    ```bash
    pip install -r requirements.txt
-   ```
+   ``` 
 
 ### Docker installation
 This repository also builds a Docker image through Github Actions, and pushes it to the GitHub Container Registry. You can find the image here: https://github.com/brandon099/plex-media-reanalyzer/pkgs/container/plex-media-reanalyzer or by clicking on the Packages link in the side bar to the right.
