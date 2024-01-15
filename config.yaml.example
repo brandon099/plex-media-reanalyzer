@@ -1,0 +1,5 @@
+plex_server_url: http://plex:32400
+plex_token: your_plex_token
+library_section_name: Movies
+#auth_header: your_secret_token  # Replace with your desired token
+#webserver_port: 8080  # Replace with your desired port. Defaults to 8080
