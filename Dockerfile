@@ -9,6 +9,5 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY plex_media_reanalyzer.py .
-COPY ./entrypoint.sh /entrypoint.sh
 
-CMD ["/entrypoint.sh"]
+ENTRYPOINT [ "python3", "plex_media_reanalyzer.py"]
