@@ -50,7 +50,7 @@ def load_config(config_file):
 
 
 def load_ratingkeys_from_plex(search_field=None, search_value=None, return_data=False):
-    """Fetches ratingKeys and titles from a specific library in Plex and
+    """Fetches ratingKeys, titles, and filename from a specific library in Plex and
     stores them in the database. If search_field and search_value are provided,
     only the matching media is fetched."""
 
@@ -62,6 +62,10 @@ def load_ratingkeys_from_plex(search_field=None, search_value=None, return_data=
         results = media.search(**{search_field: search_value})
     else:
         results = media.all()
+
+    if not results:
+        print(f"No results found in Plex for {search_value}.")
+        return
 
     plex_data = []
     for item in results:
@@ -88,7 +92,11 @@ def analyze_media(media_title=None, media_filename=None):
         return
 
     results = db.search(getattr(Media, search_field) == search_value)
+
     if not results:
+        if media_filename:
+            raise ValueError(f"Media filename {search_value} not found in local DB. "
+                             "Please load all rating keys or sync db from Plex first.")
         print(f"Media {search_field} not found in local DB, attempting to get from Plex")
         load_ratingkeys_from_plex(search_field, search_value)
         results = db.search(getattr(Media, search_field) == search_value)
@@ -113,23 +121,19 @@ def sync_db_with_plex():
        remove any entries that do not exist in Plex anymore, and add/update
        entries that are not in sync in the database."""
 
-    # Fetch all rating keys and titles from Plex
     plex_data = load_ratingkeys_from_plex(return_data=True)
-
-    # Fetch all rating keys from the database
     db_data = db.all()
 
-    # Find rating keys that are in the database but not in Plex
     if plex_data is not None:
-        missing_keys = [item for item in db_data if item["ratingKey"] not in [data["ratingKey"] for data in plex_data]]
+        missing_keys = [item for item in db_data
+                        if item["ratingKey"] not in
+                        [data["ratingKey"] for data in plex_data]]
     else:
         missing_keys = []
 
-    # Delete missing rating keys from the database
     for item in missing_keys:
         db.remove(doc_ids=[item.doc_id])
 
-    # Upsert existing rating keys in the database
     for item in plex_data:
         db.upsert(item, Media.ratingKey == item["ratingKey"])
 
@@ -137,6 +141,7 @@ def sync_db_with_plex():
 
 
 def require_auth(f):
+    """Decorator to require authentication for a web request."""
     @wraps(f)
     def decorated(*args, **kwargs):
         if config.get("auth_header"):
@@ -150,6 +155,7 @@ def require_auth(f):
 @webserver.post("/load_ratingkeys")
 @require_auth
 def load_ratingkeys_web_request():
+    """Loads all rating keys from Plex into the local database."""
     load_ratingkeys_from_plex()
     return "Rating keys loaded from Plex!"
 
@@ -157,7 +163,8 @@ def load_ratingkeys_web_request():
 @webserver.post("/analyze_media")
 @require_auth
 def analyze_media_web_request():
-    request_data = request.get_json()
+    """Triggers a media analysis in Plex."""
+    request_data = request.json
     media_title = request_data.get('title')
     media_filename = request_data.get('filename')
 
@@ -177,6 +184,7 @@ def analyze_media_web_request():
 @webserver.get("/sync_db")
 @require_auth
 def sync_db_web_request():
+    """Synchronizes the local database with Plex."""
     sync_db_with_plex()
     return "Database synchronized with Plex!"
 
@@ -257,11 +265,12 @@ if __name__ == "__main__":
     elif args.analyze_media:
         if not args.media_title and not args.media_filename:
             parser.error("--media-title or --media-filename is required for --analyze-media")
+        if args.media_title and args.media_filename:
+            parser.error("Only one of --media-title or --media-filename should be provided")
         if args.media_title:
-            analyze_media(args.media_title)
+            analyze_media(media_title=args.media_title)
         elif args.media_filename:
-            analyze_media(args.media_filename)
-        analyze_media(args.media_title)
+            analyze_media(media_filename=args.media_filename)
     elif args.sync_db:
         sync_db_with_plex()
     else:

@@ -54,8 +54,13 @@ Running plex-media-reanalyzer in server mode will listen for web requests to tri
 
 Then you can call it from another tool via a web request like the following. As you can see the request data (-d) is simply the title of the media you want to trigger a reanalyze in Plex.
 
+To analyze by title:
    ```bash
-   curl -X POST -d "The Matrix" 0.0.0.0:8048/analyze_media
+   curl -X POST -H "Content-Type: application/json" -d '{"title": "The Matrix"}' http://localhost:8080/analyze_media
+   ```
+To analyze by filename (requires local DB to be loaded or synced with Plex):
+   ```bash
+   curl -X POST -H "Content-Type: application/json" -d '{"filename": "The.Matrix.1999.mkv"}' http://localhost:8080/analyze_media
    ```
 
 #### Available endoints:
@@ -75,7 +80,7 @@ This calls the `analyze_media` function that in turn makes a PUT request to the 
 
 ```bash
 $ python3 plex_media_reanalyzer.py -h
-usage: plex_media_reanalyzer.py [-h] [-c CONFIG] [-t MEDIA_TITLE] [-d DB_PATH] (-l | -a | -m)
+usage: plex_media_reanalyzer.py [-h] [-c CONFIG] [-t MEDIA_TITLE] [-f MEDIA_FILENAME] [-d DB_PATH] (-l | -a | -m | -s)
 
 Plex media reanalyzer.
 
@@ -84,13 +89,16 @@ options:
   -c CONFIG, --config CONFIG
                         Path to the configuration file.
   -t MEDIA_TITLE, --media-title MEDIA_TITLE
-                        Title of the media to analyze (required for --analyze-media and --load-ratingkey)
+                        Title of the media to analyze
+  -f MEDIA_FILENAME, --media-filename MEDIA_FILENAME
+                        The filename of the media to analyze.
   -d DB_PATH, --db-path DB_PATH
-                        Path to the database file (JSON TinyDB cache file)
+                        Path to the local database file.
   -l, --listen          Start the web server.
   -a, --load-all-ratingkeys
                         Caches all rating keys to local DB. Useful for first run.
-  -m, --analyze-media   Analyze media (requires --media-title).
+  -m, --analyze-media   Analyze media (requires --media-title or --media-filename).
+  -s, --sync-db         Synchronize the database with Plex
 ```
 
 Some example commands:
@@ -105,13 +113,26 @@ Load all rating keys into local DB:
 python plex_media_reanalyzer.py -a
 ```
 
-Analyze a movie:
+Sync local DB with Plex (removes entries that have been removed from Plex and adds any new ones):
+```bash
+python plex_media_reanalyzer.py -s
+```
+
+
+Analyze a movie, by title:
 ```bash
 python plex_media_reanalyzer -m -t "The Matrix"
 ```
 
+Analyze a movie, by filename:
+```bash
+python plex_media_reanalyzer -m -f "The.Matrix.1999.mkv"
+```
+
 ## Configuration
 The configuration can be done through the `config.yaml` file or through environment variables. The keys currently supported (for environment variable configuration, they are in all caps) are:
+
+_**Required**_
 
 `plex_server_url`: The URL of your Plex Media Server (e.g. http://plex.localhost:32400)
 
@@ -119,11 +140,13 @@ The configuration can be done through the `config.yaml` file or through environm
 
 `library_section_name`: The name of the library section to target for media reanalysis. (e.g. Movies)
 
-`webserver_port`: The port for the web server (optional, default is 8080).
+_Optional_
 
-`auth_header`: The string to use to do basic HEADER auth for any requests to this tool's API. Optional, unless provided, then all requests must have an auth header that matches.
+`webserver_port`: The port for the web server (default is 8080).
 
-`db_path`: Path to the TinyDB JSON file to cache media ratingkey and title.
+`auth_header`: The string to use to do basic HEADER auth for any requests to this tool's API. Optional, unless provided, then all requests except /health must have an auth header that matches.
+
+`db_path`: Path to the TinyDB JSON file to cache media ratingkey and title (default is `./plex-media.db.json`)
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
