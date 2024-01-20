@@ -81,15 +81,17 @@ def load_ratingkeys_from_plex(search_field=None, search_value=None, return_data=
         print("Finished storing media data into database.")
 
 
-def analyze_media(media_title=None, media_filename=None):
+def analyze_media(media_title=None, media_filename=None, library_section=None):
     """Sends a PUT request to the Plex 'analyze' endpoint for a given title or filename."""
+
+    if not library_section:
+        library_section = config["library_section_name"]
 
     search_field = 'title' if media_title else 'fileName'
     search_value = media_title or media_filename
 
     if not search_value:
-        print("Please provide either a media title or a media filename.")
-        return
+        return "Please provide either a media title or a media filename."
 
     results = db.search(getattr(Media, search_field) == search_value)
 
@@ -101,6 +103,7 @@ def analyze_media(media_title=None, media_filename=None):
         load_ratingkeys_from_plex(search_field, search_value)
         results = db.search(getattr(Media, search_field) == search_value)
 
+    messages = []
     for item in results:
         ratingKey = item["ratingKey"]
 
@@ -111,9 +114,11 @@ def analyze_media(media_title=None, media_filename=None):
         try:
             response = requests.put(url, headers=headers)
             response.raise_for_status()
-            print(f"Media '{search_value}' successfully sent for analysis!")
+            messages.append(f"Media '{search_value}' successfully sent for analysis!")
         except requests.exceptions.RequestException as e:
-            print(f"Error sending request to analyze media: {e}")
+            messages.append(f"Error sending request to analyze media: {e}")
+
+    return messages
 
 
 def sync_db_with_plex():
@@ -167,16 +172,17 @@ def analyze_media_web_request():
     request_data = request.json
     media_title = request_data.get('title')
     media_filename = request_data.get('filename')
+    library_section = request_data.get('library_section')
 
     if not media_title and not media_filename:
         abort(400, "Missing title or filename in request body")
 
     try:
         if media_title:
-            analyze_media(media_title=media_title)
+            message = analyze_media(media_title=media_title, library_section=library_section)
         elif media_filename:
-            analyze_media(media_filename=media_filename)
-        return "Media analysis triggered."
+            message = analyze_media(media_filename=media_filename, library_section=library_section)
+        return message
     except Exception as e:
         abort(500, f"Error analyzing media: {e}")
 
@@ -220,6 +226,11 @@ if __name__ == "__main__":
         "-d", "--db-path",
         default="plex-media.db.json",
         help="Path to the database file.",
+    )
+    parser.add_argument(
+        "-L", "--library-section",
+        help="Library section to analyze (optional, allows you to override "
+             "the configured library for one-off to different libaries).",
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
@@ -268,9 +279,13 @@ if __name__ == "__main__":
         if args.media_title and args.media_filename:
             parser.error("Only one of --media-title or --media-filename should be provided")
         if args.media_title:
-            analyze_media(media_title=args.media_title)
+            messages = analyze_media(media_title=args.media_title,
+                                     library_section=args.library_section)
         elif args.media_filename:
-            analyze_media(media_filename=args.media_filename)
+            messages = analyze_media(media_filename=args.media_filename,
+                                     library_section=args.library_section)
+        for message in messages:
+            print(message)
     elif args.sync_db:
         sync_db_with_plex()
     else:

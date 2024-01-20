@@ -63,6 +63,11 @@ To analyze by filename (requires local DB to be loaded or synced with Plex):
    curl -X POST -H "Content-Type: application/json" -d '{"filename": "The.Matrix.1999.mkv"}' http://localhost:8080/analyze_media
    ```
 
+To analyze by title and override the Library:
+   ```bash
+   curl -X POST -H "Content-Type: application/json" -d '{"filename": "The.Matrix.1999.mkv", "library_section": "Movies-4K"}' http://localhost:5000/analyze_media
+   ```
+
 #### Available endoints:
 ##### GET /
 This returns an empty 200 for now
@@ -80,7 +85,8 @@ This calls the `analyze_media` function that in turn makes a PUT request to the 
 
 ```bash
 $ python3 plex_media_reanalyzer.py -h
-usage: plex_media_reanalyzer.py [-h] [-c CONFIG] [-t MEDIA_TITLE] [-f MEDIA_FILENAME] [-d DB_PATH] (-l | -a | -m | -s)
+usage: plex_media_reanalyzer.py [-h] [-c CONFIG] [-t MEDIA_TITLE] [-f MEDIA_FILENAME] [-d DB_PATH]
+                                [-L LIBRARY_SECTION] (-l | -a | -m | -s)
 
 Plex media reanalyzer.
 
@@ -89,11 +95,14 @@ options:
   -c CONFIG, --config CONFIG
                         Path to the configuration file.
   -t MEDIA_TITLE, --media-title MEDIA_TITLE
-                        Title of the media to analyze
+                        Title of the media to analyze (required for --analyze-media and --load-ratingkey)
   -f MEDIA_FILENAME, --media-filename MEDIA_FILENAME
                         The filename of the media to analyze.
   -d DB_PATH, --db-path DB_PATH
-                        Path to the local database file.
+                        Path to the database file.
+  -L LIBRARY_SECTION, --library-section LIBRARY_SECTION
+                        Library section to analyze (optional, allows you to override the configured library for one-
+                        off to different libaries).
   -l, --listen          Start the web server.
   -a, --load-all-ratingkeys
                         Caches all rating keys to local DB. Useful for first run.
@@ -127,6 +136,11 @@ python plex_media_reanalyzer -m -t "The Matrix"
 Analyze a movie, by filename:
 ```bash
 python plex_media_reanalyzer -m -f "The.Matrix.1999.mkv"
+```
+
+Analyze a movie, by filename with Library override:
+```bash
+python plex_media_reanalyzer -m -f "The.Matrix.1999.mkv" -L "Movies-4k"
 ```
 
 ## Configuration
