@@ -96,11 +96,8 @@ def analyze_media(media_title=None, media_filename=None, library_section=None):
     results = db.search(getattr(Media, search_field) == search_value)
 
     if not results:
-        if media_filename:
-            print(f"FileName {media_filename} was not found in local DB, syncing DB with Plex first")
-            sync_db_with_plex()
-        print(f"Media {search_field} not found in local DB, attempting to get from Plex")
-        load_ratingkeys_from_plex(search_field, search_value)
+        print(f"Media {search_field} not found in local DB, syncing with Plex")
+        sync_db_with_plex()
         results = db.search(getattr(Media, search_field) == search_value)
 
     messages = []
