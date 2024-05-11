@@ -81,6 +81,9 @@ This calls the `load_all_ratingkeys` function that calls Plex to get all rating 
 ##### POST /analyze_media
 This calls the `analyze_media` function that in turn makes a PUT request to the Plex API to begin analyzing a media file. It will attempt to look up the rating key in the local DB file first, but if it is not present there it will first call Plex to retrieve it.
 
+##### PUT /sync_db
+This calls the `sync_db_with_plex` function that syncs the local cache DB with Plex, meaning it removes anything removed from Plex, and adds anything added to Plex but missing from the local cache DB.
+
 ### Commandline Mode
 
 ```bash

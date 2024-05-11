@@ -184,7 +184,7 @@ def analyze_media_web_request():
         abort(500, f"Error analyzing media: {e}")
 
 
-@webserver.get("/sync_db")
+@webserver.put("/sync_db")
 @require_auth
 def sync_db_web_request():
     """Synchronizes the local database with Plex."""
